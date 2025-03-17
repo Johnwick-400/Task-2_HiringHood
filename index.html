@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 5px;
+        }
+        
+        .bot-response ul, .bot-response ol {
+            padding-left: 1.5rem;
+            margin: 0.5rem 0;
+        }
+        .bot-response ul {
+            list-style-type: disc;
+        }
+        .bot-response ol {
+            list-style-type: decimal;
+        }
+        .bot-response li {
+            margin-bottom: 0.25rem;
+        }
+        .bot-response p {
+            margin-bottom: 0.5rem;
+        }
+        .bot-response h1, .bot-response h2, .bot-response h3 {
+            font-weight: bold;
+            margin-top: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+        .bot-response h1 {
+            font-size: 1.25rem;
+        }
+        .bot-response h2 {
+            font-size: 1.1rem;
+        }
+        .bot-response h3 {
+            font-size: 1rem;
+        }
+        .bot-response code {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 0.125rem 0.25rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+        }
+        .bot-response pre {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            overflow-x: auto;
+            margin: 0.5rem 0;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 h-screen w-screen flex items-center justify-center">
+    <div class="w-full h-full bg-gray-800 text-white p-6 flex flex-col">
+        <div class="text-xl font-bold text-center mb-4">AI Chatbot</div>
+        <div id="chat-box" class="flex-grow overflow-y-auto p-3 space-y-3 flex flex-col bg-gray-700 rounded-md">
+            <div class="text-center text-gray-400">Ask me anything...</div>
+        </div>
+        <div class="flex mt-4">
+            <input id="user-input" type="text" placeholder="Type a message..." class="flex-grow p-3 rounded-l-md bg-gray-900 border-none text-white focus:outline-none" onkeydown="if(event.key==='Enter') sendMessage()">
+            <button onclick="sendMessage()" class="bg-blue-500 px-4 py-3 rounded-r-md hover:bg-blue-600">Send</button>
+        </div>
+        <div class="text-xs text-gray-400 mt-2 text-center">Type /bullets or /numbers for formatted lists</div>
+    </div>
+    
+    <script>
+        async function sendMessage() {
+            let inputField = document.getElementById("user-input");
+            let chatBox = document.getElementById("chat-box");
+            let userText = inputField.value.trim();
+            
+            if (userText === "") return;
+            
+            
+            let userDiv = document.createElement('div');
+            userDiv.className = 'bg-blue-600 p-3 rounded-lg self-end max-w-xs md:max-w-md';
+            userDiv.textContent = userText;
+            chatBox.appendChild(userDiv);
+            
+            inputField.value = "";
+            chatBox.scrollTop = chatBox.scrollHeight;
+            
+          
+            let typingDiv = document.createElement('div');
+            let typingId = `typing-${Date.now()}`;
+            typingDiv.id = typingId;
+            typingDiv.className = 'bg-gray-600 p-3 rounded-lg self-start max-w-xs md:max-w-md';
+            typingDiv.textContent = 'Typing...';
+            chatBox.appendChild(typingDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            
+            try {
+               
+                let processedText = userText;
+                if (userText.startsWith('/bullets')) {
+                    processedText = userText.replace('/bullets', '') + ' (Please format your response as a bullet-point list)';
+                } else if (userText.startsWith('/numbers')) {
+                    processedText = userText.replace('/numbers', '') + ' (Please format your response as a numbered list)';
+                }
+                
+                
+                let response = await fetch(`/chat/${encodeURIComponent(processedText)}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                
+                let data = await response.json();
+                let botResponse = data.response;
+                
+                
+                let typingElement = document.getElementById(typingId);
+                if (typingElement) {
+                    typingElement.remove();
+                }
+                
+                
+                let botDiv = document.createElement('div');
+                botDiv.className = 'bg-gray-600 p-3 rounded-lg self-start max-w-xs md:max-w-md bot-response';
+                botDiv.innerHTML = botResponse; 
+                chatBox.appendChild(botDiv);
+                
+                chatBox.scrollTop = chatBox.scrollHeight;
+            } catch (error) {
+                console.error("Error fetching response:", error);
+                
+                
+                let typingElement = document.getElementById(typingId);
+                if (typingElement) {
+                    typingElement.remove();
+                }
+                
+                let errorDiv = document.createElement('div');
+                errorDiv.className = 'bg-red-500 p-3 rounded-lg self-start max-w-xs md:max-w-md';
+                errorDiv.textContent = 'Sorry, there was an error processing your request.';
+                chatBox.appendChild(errorDiv);
+                
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+        }
+    </script>
+</body>
+</html>
